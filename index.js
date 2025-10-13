@@ -26,6 +26,10 @@ const DATA_DIR = "./data";
 const SUBSCRIBERS_FILE = path.join(DATA_DIR, "subscribers.json");
 const FACTS_FILE = path.join(DATA_DIR, "facts.json");
 const QUOTES_FILE = path.join(DATA_DIR, "quotes.json");
+const KODE_WILAYAH_FILE = path.join(DATA_DIR, "kode_wilayah.json");
+const wilayahData = fs.existsSync(KODE_WILAYAH_FILE)
+  ? JSON.parse(fs.readFileSync(KODE_WILAYAH_FILE, "utf8"))
+  : [];
 
 // ---------- ENSURE DATA FOLDER ----------
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -107,6 +111,11 @@ function sendLongMessage(channel, text) {
   }
 }
 
+function findWilayahCode(cityName = "jakarta") {
+  const lower = cityName.toLowerCase();
+  return wilayahData.find((w) => w.nama.toLowerCase().includes(lower));
+}
+
 client.on("messageCreate", async (message) => {
   if (message.author.bot || !message.content.startsWith(PREFIX)) return;
   const [cmd, ...args] = message.content
@@ -120,6 +129,43 @@ client.on("messageCreate", async (message) => {
       break;
     case "weather":
       if (args.length === 0) {
+        return message.reply(
+          "🌦 Please provide a city name, e.g. `!weather Jakarta`",
+        );
+      }
+
+      const city = args.join(" ");
+      const wilayah = findWilayahCode(city);
+
+      if (!wilayah) {
+        return message.reply(
+          `❌ Sorry, I can’t find "${city}" in my region database.`,
+        );
+      }
+
+      try {
+        const response = await axios.get(
+          `https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=${wilayah.kode}`,
+        );
+        console.log(response.data);
+        const data = response.data.data;
+
+        if (!data || !data[0]?.cuaca?.length) {
+          return message.reply(`⚠️ No weather data found for ${city}.`);
+        }
+
+        const forecast = data[0].cuaca[0];
+        const temp = forecast.t || "N/A";
+        const hum = forecast.hu || "N/A";
+        const condition = forecast.weather || forecast.kodeCuaca || "Unknown";
+
+        message.channel.send(
+          `🌤 **Weather for ${wilayah.nama}, ${wilayah.provinsi}:**\n` +
+            `🌡️ Temperature: ${temp}°C\n💧 Humidity: ${hum}%\n☁️ Condition: ${condition}`,
+        );
+      } catch (err) {
+        console.error("❌ Weather fetch error:", err.message);
+        message.reply("⚠️ Failed to fetch weather data from BMKG.");
       }
       break;
     case "askai":
