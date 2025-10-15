@@ -1,7 +1,7 @@
 // index.js
 // Kingdom of Science — Combined features
 import "dotenv/config";
-import { Client, GatewayIntentBits } from "discord.js";
+import { Client, EmbedBuilder, GatewayIntentBits } from "discord.js";
 import axios from "axios";
 import fs from "fs";
 import path from "path";
@@ -147,22 +147,91 @@ client.on("messageCreate", async (message) => {
         const response = await axios.get(
           `https://api.bmkg.go.id/publik/prakiraan-cuaca?adm4=${wilayah.kode}`,
         );
-        console.log(response.data);
-        const data = response.data.data;
 
-        if (!data || !data[0]?.cuaca?.length) {
+        // console.log(response.data.data[0].cuaca);
+        const forecasts = response.data.data[0].cuaca; // flatten nested arrays
+        if (!forecasts || forecasts.length === 0) {
           return message.reply(`⚠️ No weather data found for ${city}.`);
         }
 
-        const forecast = data[0].cuaca[0];
-        const temp = forecast.t || "N/A";
-        const hum = forecast.hu || "N/A";
-        const condition = forecast.weather || forecast.kodeCuaca || "Unknown";
-
-        message.channel.send(
-          `🌤 **Weather for ${wilayah.nama}, ${wilayah.provinsi}:**\n` +
-            `🌡️ Temperature: ${temp}°C\n💧 Humidity: ${hum}%\n☁️ Condition: ${condition}`,
+        // Sort forecasts by datetime
+        forecasts.sort(
+          (a, b) => new Date(a.local_datetime) - new Date(b.local_datetime),
         );
+
+        // Find the current and next 3 forecasts
+        const upcoming = forecasts.slice(0, 4);
+
+        if (upcoming.length === 0) {
+          return message.reply(`⚠️ No upcoming forecast data for ${city}.`);
+        }
+
+        const current = upcoming[0][0];
+        const next3 = upcoming[0].slice(1, 5);
+
+        const weatherEmbed = new EmbedBuilder()
+          .setColor("#00BFFF")
+          .setTitle(`🌤 Weather for ${wilayah.nama}, ${wilayah.provinsi}`)
+          .setDescription(
+            `**${current.weather_desc_en} (${current.weather_desc})**`,
+          )
+          .setThumbnail(`${current.image.replace(/ /g, "%20")}`)
+          .addFields(
+            {
+              name: "🌡️ Temperature",
+              value: `${current.t}°C`,
+              inline: true,
+            },
+            {
+              name: "💧 Humidity",
+              value: `${current.hu}%`,
+              inline: true,
+            },
+            {
+              name: "🌬️ Wind",
+              value: `${current.ws} m/s (${current.wd})`,
+              inline: true,
+            },
+            {
+              name: "🕒 Forecast Time",
+              value: new Date(current.local_datetime).toLocaleString("id-ID"),
+              inline: false,
+            },
+            {
+              name: "📈 Visibility",
+              value: current.vs_text || "> 10 km",
+              inline: true,
+            },
+            {
+              name: "📅 Data Updated",
+              value: new Date(current.analysis_date).toLocaleString("id-ID"),
+              inline: true,
+            },
+            {
+              name: `🔮 Next ${next3.length} Forecasts`,
+              value: next3
+                .map(
+                  (f) =>
+                    `🕒 **${new Date(f.local_datetime).toLocaleTimeString(
+                      "id-ID",
+                      {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      },
+                    )}** — ${f.weather_desc} (${f.t}°C, 💧${f.hu}%)`,
+                )
+                .join("\n"),
+              inline: false,
+            },
+          )
+          .setFooter({
+            text: "Data source: BMKG | Kingdom of Science",
+            iconURL:
+              "https://api-apps.bmkg.go.id/storage/icon/cuaca/cerah-pm.svg",
+          })
+          .setTimestamp();
+
+        message.channel.send({ embeds: [weatherEmbed] });
       } catch (err) {
         console.error("❌ Weather fetch error:", err.message);
         message.reply("⚠️ Failed to fetch weather data from BMKG.");
