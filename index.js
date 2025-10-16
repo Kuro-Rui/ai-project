@@ -45,7 +45,7 @@ if (!fs.existsSync(QUOTES_FILE))
         "Get excited! This is the power of science! — Senku Ishigami",
         "Nothing is impossible with science! — Senku",
         "Science is just a name for the pursuit of knowledge! — Senku",
-        "If you don’t give up, you can’t fail! — Chrome",
+        "If you don't give up, you can't fail! — Chrome",
       ],
       null,
       2,
@@ -139,7 +139,7 @@ client.on("messageCreate", async (message) => {
 
       if (!wilayah) {
         return message.reply(
-          `❌ Sorry, I can’t find "${city}" in my region database.`,
+          `❌ Sorry, I can't find "${city}" in my region database.`,
         );
       }
 
@@ -171,7 +171,7 @@ client.on("messageCreate", async (message) => {
 
         const weatherEmbed = new EmbedBuilder()
           .setColor("#00BFFF")
-          .setTitle(`🌤 Weather for ${wilayah.nama}, ${wilayah.provinsi}`)
+          .setTitle(`🌤 Weather for ${wilayah.kelurahan}, ${wilayah.provinsi}`)
           .setDescription(
             `**${current.weather_desc_en} (${current.weather_desc})**`,
           )
