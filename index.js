@@ -83,7 +83,13 @@ async function askAI(prompt, model = "ibm-granite/granite-4.0-micro") {
   try {
     const response = await hf.chatCompletion({
       model: "meta-llama/Llama-3.1-8B-Instruct",
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        { role: "user", content: prompt },
+        {
+          role: "system",
+          content: "",
+        },
+      ],
       max_tokens: 512,
     });
     HUGGING_INDEX++;
@@ -167,6 +173,7 @@ client.on("messageCreate", async (message) => {
         }
 
         const current = upcoming[0][0];
+        console.log(current);
         const next3 = upcoming[0].slice(1, 5);
 
         const weatherEmbed = new EmbedBuilder()
@@ -268,6 +275,10 @@ client.on("messageCreate", async (message) => {
     case "drstone":
       const quote = quotes[Math.floor(Math.random() * quotes.length)];
       message.channel.send(`🎌 ${quote}`);
+      break;
+
+    case "self-destruct":
+      //! we'll gonna do something here later
       break;
 
     default:
