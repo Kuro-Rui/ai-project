@@ -1,5 +1,10 @@
-// index.js
-// Kingdom of Science — Combined features
+/*
+ TODO:
+ - [ ] buat 2 sistem weather (nowacast based on kecamatan, weather biasa)
+ - [ ] buat sistem buat nowacastnya nanya ke user buat lebih spesifik mau tepatnya di lokasi yang mana
+ - [ ] 
+ */
+
 import "dotenv/config";
 import { Client, EmbedBuilder, GatewayIntentBits } from "discord.js";
 import axios from "axios";
@@ -119,7 +124,7 @@ function sendLongMessage(channel, text) {
 
 function findWilayahCode(cityName = "jakarta") {
   const lower = cityName.toLowerCase();
-  return wilayahData.find((w) => w.nama.toLowerCase().includes(lower));
+  return wilayahData.find((w) => w.kelurahan.toLowerCase().includes(lower));
 }
 
 client.on("messageCreate", async (message) => {
@@ -178,7 +183,7 @@ client.on("messageCreate", async (message) => {
 
         const weatherEmbed = new EmbedBuilder()
           .setColor("#00BFFF")
-          .setTitle(`🌤 Weather for ${wilayah.kelurahan}, ${wilayah.provinsi}`)
+          .setTitle(`🌤 Weather for ${wilayah.kelurahan}, ${wilayah.kab_kota}`)
           .setDescription(
             `**${current.weather_desc_en} (${current.weather_desc})**`,
           )
